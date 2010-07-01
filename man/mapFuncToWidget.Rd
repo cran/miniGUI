@@ -5,22 +5,23 @@
 \title{ Map R functions to a GUI window}
 
 \description{
-  Function map a large class of \R\ functions onto a set of
+  Function map a large class of \R functions onto a set of
   \code{\link{tcltk}} widgets that allows the input of its
   parameter.
 }
 
 \usage{
-  mapFuncToWidget(f,frm,call="mini GUI call",bttLabel="OK",STORE="ff")
+  mapFuncToWidget(f,frm,bttLabel="OK",STORE="ff",callSubst="mini GUI call")
 }
 
 \arguments{
   \item{f}{ Function to map. }
   \item{frm}{ \code{\link{tcltk}} frame to place the GUI window. }
-  \item{call}{ string to set \code{call} attribute in function result. }
   \item{bttLabel}{ execution button label. }
   \item{STORE}{ A string. Name of the place where to store details needed
     by the GUI to perform the execution.}
+  \item{callSubst}{string to set \code{call} attribute/slot in some of the
+    R computations results.}
 }
 
 \details{

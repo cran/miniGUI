@@ -20,8 +20,8 @@
   \item{opFuns}{ Named list of functions to add in the GUI menu \bold{Ops}.}
   \item{title}{ Main window GUI title.}
   \item{init}{ Function to call before the GUI setup.}
-  \item{WRAPFUN}{ when TRUE, automatic \code{\link{tcltk}} widget is
-    built for the functions in \code{opFuns}.}
+  \item{WRAPFUN}{ when TRUE, the default option, an automatic 
+    \code{\link{tcltk}} widget is built for the functions in \code{opFuns}.}
 }
 
 \details{
