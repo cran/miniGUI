@@ -4,9 +4,15 @@
 \alias{addMenusCmd}
 \alias{miniGUIgetFormals}
 \alias{miniGUIcallEval}
-\alias{evalPlugin}
 \alias{miniGUIoutput}
+\alias{evalPlugin}
+\alias{doNothingPlugin}
 \alias{miniGUIeval}
+\alias{setMiniGUIData}
+\alias{setMiniGUIans}
+\alias{getMiniGUIData}
+\alias{getMiniGUIans}
+\alias{miniGUIEnvir}
 \alias{miniGUIans}
 \alias{miniGUIData}
 \alias{miniGUIffff}
@@ -20,7 +26,7 @@
 \usage{
   addMenusCmd(cmdFuns,baseFrame)
   miniGUIgetFormals(f)
-  miniGUIcallEval(f,p)
+  miniGUIcallEval(f,p,e)
   evalPlugin(ev)
   miniGUIoutput(x,mess="\nminiGUI output: \n")
 }
@@ -31,6 +37,7 @@
     for the function \code{fun}.}
   \item{f}{ An \R\ function.}
   \item{p}{ a list with all the parameters \code{f} requires.}
+  \item{e}{ environment where the parameters \code{p} of \code{f} are evaluated. By default \code{.GlobalEnv} .}
   \item{x}{ An \R\ object to print.}
   \item{mess}{ a string with a brief message that is printed before
     \code{x}.}
@@ -51,8 +58,12 @@
   the result of the last computation made by a call to any of the
   \code{miniGUI} menu functions or any function widget created with
   by the functions \code{makeWidgetCmd} or \code{mapFuncToWidget}.
-  \code{miniGUIData} and \code{miniGUIffff} are used to store information 
-  required to compute function widgets.  
+  \code{miniGUIData}, \code{miniGUIffff} and \code{miniGUIans} are used 
+  to store information or answers to commands that are required to compute 
+  function widgets. The functions \code{setMiniGUIData} \code{setMiniGUIans}, 
+  \code{getMiniGUIData}, \code{getMiniGUIans} are used to set and get data 
+  from \code{miniGUIData} and \code{miniGUIans} which lives in the 
+  \code{miniGUIEnvir} envrironment.
   %% add error handling capabilities
 }
 

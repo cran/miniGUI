@@ -13,29 +13,70 @@ require(tcltk) || stop("tcltk support is absent")
 ##
 ##  Some inits...	
 ##
-miniGUIData <- list()
-miniGUIans <- NA        ## last result
+##  .onLoad <- function(libname and pkgname;
+miniGUIEnvir <- new.env()
+miniGUIEnvir$miniGUIData <- list()
+miniGUIEnvir$miniGUIans <- NA        ## last result
+
+
+##
+##  Set and get data from miniGUI
+##
+setMiniGUIData <- function(NAME,PART=NULL,val) 
+{
+  xxx <- miniGUIEnvir$miniGUIData
+  if( !is.null(PART) )
+    xxx[[NAME]][[PART]] <- val
+  else
+    xxx[[NAME]] <- val
+  assign("miniGUIData",xxx,envir=miniGUIEnvir)
+}
+
+
+getMiniGUIData <- function(NAME,PART=NULL) 
+{
+  if( !is.null(PART) )
+    return( miniGUIEnvir$miniGUIData[[NAME]][[PART]] )
+  else
+    return( miniGUIEnvir$miniGUIData[[NAME]] )
+}
+
+
+setMiniGUIans <- function(val) 
+{
+  assign("miniGUIans",val,envir=miniGUIEnvir)
+}
+
+
+getMiniGUIans <- function() 
+{
+    return( miniGUIEnvir$miniGUIans )
+}
+
+
+
 
 
 ##
 ##  evaluation procedures
 ##
-miniGUIcallEval <- function(f,p)
+## miniGUIcallEval <- function(f,p)
 ## ok
 # f = function to evaluate.
 # p = params.
 # RETURN:
 #   The evaluation of f on params p (string) using envir of f
-{
-  ## NOTICE, all arguments are evaluated in environment(f) !!
-  tryCatch(
-    expr=do.call( f,
-             lapply(p,function(x) eval(parse(text=x),envir=environment(f))),
-             envir=environment(f)
-      ),
-    error=function(e) e
-  )
-}
+## {
+##   ## NOTICE, all arguments are evaluated in environment(f) !!
+##   tryCatch(
+##     expr=do.call( f,
+##                   lapply(p,
+##                        function(x) eval(parse(text=x),envir=environment(f))),
+##                   envir=environment(f)
+##     ),
+##     error=function(e) e
+##   )
+## }
 
 
 ## miniGUIcallEvalB <- function(f,p)
@@ -51,6 +92,25 @@ miniGUIcallEval <- function(f,p)
 ##            envir=environment(f)
 ##   )
 ## }
+
+miniGUIcallEval <- function(f,p,e=environment(f))
+## ok
+# f = function to evaluate.
+# p = params.
+# e = environment where the parameters p of f are evaluated. By default .GlobalEnv 
+# RETURN:
+#   The evaluation of f on params p (string) using envir of f
+{
+  ## NOTICE, all arguments are evaluated in .GlobalEnv if e=.GlobalEnv!!
+  ## NOTICE, all arguments are evaluated in environment(f) if e=environment(f)!!
+  tryCatch(
+    expr=do.call( f,
+                  lapply( p, function(x) eval(parse(text=x), envir=e) ),
+                  envir=environment(f)
+    ),
+    error=function(err) err
+  )
+}
 
 
 ##  set miniGUI evaluation procedure
@@ -97,9 +157,11 @@ mapFuncToWidget <- function(f,frm,bttLabel="OK",STORE="ff",
 {
   ## get args
   ff <- miniGUIgetFormals(f)
-  miniGUIData[[STORE]] <<- as.list(ff)
+  ## miniGUIData[[STORE]] <<- as.list(ff)
+  setMiniGUIData(STORE,val=as.list(ff))
   ## widget GUI input lock 
-  miniGUIData[["WIDGETLOCK"]] <<- TRUE
+  ## miniGUIData[["WIDGETLOCK"]] <<- TRUE
+  setMiniGUIData("WIDGETLOCK",val=TRUE)
   ## tcltk stuff starts
   argsFrame <- tkframe(frm,borderwidth=2)
   fm <- tkframe(argsFrame, relief="groove", borderwidth=2)
@@ -110,24 +172,35 @@ mapFuncToWidget <- function(f,frm,bttLabel="OK",STORE="ff",
     parEval <- eval(parse(text=par))  ##TODO I think we do not need this
     ## create input method widget
     if( is.miniGUIwidget(parEval) ){
-      miniGUIData[[STORE]][[i]] <<- tclVar( par )
+      ## miniGUIData[[STORE]][[i]] <<- tclVar( par )
+      setMiniGUIData(STORE,i,val=tclVar( par ))
       imw <- parEval$widget(fm,STORE,i)  
     }else{ ## text entry is the default input method widget
-      miniGUIData[[STORE]][[i]] <<- tclVar( par )
-      imw <- miniGUIdefaultEntry(fm, textvariable=miniGUIData[[STORE]][[i]])
+      ## miniGUIData[[STORE]][[i]] <<- tclVar( par )
+      setMiniGUIData(STORE,i,val=tclVar( par ))
+      ## imw <- miniGUIdefaultEntry(fm, textvariable=miniGUIData[[STORE]][[i]])
+      imw <- miniGUIdefaultEntry(fm, textvariable=getMiniGUIData(STORE,i))
     }
     ## add the imput widget
     tkgrid(tklabel(fm, text=i), tklabel(fm, text="="),imw)
   }
   ## release GUI widget input lock
-  miniGUIData[["WIDGETLOCK"]] <<- FALSE
+  ## miniGUIData[["WIDGETLOCK"]] <<- FALSE
+  setMiniGUIData("WIDGETLOCK",val=FALSE)
   ## add execution button
   mainJob <- function (...)
   {
-    miniGUIans <<- miniGUIeval(f,lapply(miniGUIData[[STORE]],tclvalue))
-    if("call" %in% names(miniGUIans)) miniGUIans$call <- callSubst 
+    ## miniGUIans <<- miniGUIeval(f,lapply(miniGUIData[[STORE]],tclvalue))
+    setMiniGUIans( miniGUIeval(f,lapply(getMiniGUIData(STORE),tclvalue)) ) 
+    if( "call" %in% names(getMiniGUIans()) ) 
+    {
+      ##miniGUIans$call <- callSubst 
+      xxx <- getMiniGUIans()
+      xxx$call <- callSubst
+      assign("miniGUIans",xxx,envir=miniGUIEnvir)
+    }
     ## show result
-    miniGUIoutput( miniGUIans )
+    miniGUIoutput( getMiniGUIans() )
   }
   ## add and pack the frames
   tkgrid(tkbutton(fm,text=bttLabel,command=mainJob))
@@ -159,7 +232,8 @@ makeWidgetCmd <- function(frmTitle,fun,baseFrame=.TkRoot,STORE="ff",GRAB=TRUE)
     quitCmd <- function()
     {
       ## Remove function storage from miniGUIData
-      miniGUIData[[STORE]] <<- NULL
+      ## miniGUIData[[STORE]] <<- NULL
+      setMiniGUIData(STORE,val=NULL)
       ## When destroying, main frame is again enabled(ungrabbed !!)
       tkdestroy(frm)
     }
@@ -213,22 +287,22 @@ miniGUI <- function(mainFrameFun=evalPlugin,opFuns=NULL,title="mini GUI",
 #    Creates the gui 
 {
   ##  tcltk draw main window
-  miniGUIBase <<- tktoplevel()
+  miniGUIBase <- tktoplevel() ## miniGUIBase <<- tktoplevel()
   tkwm.title(miniGUIBase,title)
   ##  Some inits...
   init()
-  printGUIAns <- function(...) { print(miniGUIans) }
+  printGUIAns <- function(...) { miniGUIoutput( getMiniGUIans() ) }
   quit <- function(...) { tkdestroy(miniGUIBase) }
   doNothing <- function(...){ }
   showGuiData <- function(...){
     res <- NULL
-    if(length(miniGUIData)==0)
+    if(length(miniGUIEnvir$miniGUIData)==0)
       cat('\nNo data found.')
     else{
-      for(n in names(miniGUIData))
-      res <- rbind(res,cbind(CLASS=class(miniGUIData[[n]]),
-                             TYPE=typeof(miniGUIData[[n]])))
-      rownames(res) <- names(miniGUIData)
+      for(n in names(miniGUIEnvir$miniGUIData))
+      res <- rbind(res,cbind(CLASS=class(miniGUIEnvir$miniGUIData[[n]]),
+                             TYPE=typeof(miniGUIEnvir$miniGUIData[[n]])))
+      rownames(res) <- names(miniGUIEnvir$miniGUIData)
       cat("\nMini-GUI data:\n")
       print(res)
     }
@@ -249,11 +323,11 @@ miniGUI <- function(mainFrameFun=evalPlugin,opFuns=NULL,title="mini GUI",
     ## avoid empty names lists
     if( is.null(names(opFuns)) )
       names(opFuns) <- paste("F",1:length(opFuns),sep="")            
-    miniGUIffff <<- opFuns
+    miniGUIffff <- opFuns
     for( nf in names(opFuns) )
-      miniGUIffff[[nf]] <<- makeWidgetCmd(nf,opFuns[[nf]],miniGUIBase)
+      miniGUIffff[[nf]] <- makeWidgetCmd(nf,opFuns[[nf]],miniGUIBase)
   }else{
-    miniGUIffff <<- opFuns
+    miniGUIffff <- opFuns
   }
   opsMenusCmd <- function() addMenusCmd(miniGUIffff,miniGUIBase) 
   ##  adds menus
@@ -290,7 +364,8 @@ miniGUI <- function(mainFrameFun=evalPlugin,opFuns=NULL,title="mini GUI",
 ##
 ##  avoid building input widget when GUI is not used
 ##
-miniGUIData[["WIDGETLOCK"]] <- FALSE
+## miniGUIData[["WIDGETLOCK"]] <- FALSE
+setMiniGUIData("WIDGETLOCK",val=FALSE)
 
 ##
 ##  miniGUIwidget reckon
@@ -314,11 +389,14 @@ miniGUIentry <- function(x)
 ##
 # x = init value
 {
-  if( ! miniGUIData[["WIDGETLOCK"]] ) return(x)
+  ## if( ! miniGUIData[["WIDGETLOCK"]] ) return(x)
+  if( ! getMiniGUIData("WIDGETLOCK") ) return(x)
   res <- list(widgetType="miniGUIentry",
               widget=function(FRAME,STORE,VAR)  {
-                miniGUIData[[STORE]][[VAR]] <<- tclVar( x )
-                res <- tkentry(FRAME,textvariable=miniGUIData[[STORE]][[VAR]])
+                ## miniGUIData[[STORE]][[VAR]] <<- tclVar( x )
+                setMiniGUIData(STORE,VAR,val=tclVar( x ))
+                ## res <- tkentry(FRAME,textvariable=miniGUIData[[STORE]][[VAR]])
+                res <- tkentry(FRAME,textvariable=getMiniGUIData(STORE,VAR))
                 return( res )
               },  
               x=x)
@@ -332,15 +410,18 @@ miniGUIentry <- function(x)
 ##
 miniGUIscale <- function(from,to,by)
 ##
-# from, to, by = from which value, to which value, by such increment.
+# from, to, by = from which value, to which value, by which increment.
 {
-  if( ! miniGUIData[["WIDGETLOCK"]] ) return(from)
+  ## if( ! miniGUIData[["WIDGETLOCK"]] ) return(from)
+  if( ! getMiniGUIData("WIDGETLOCK") ) return(from)
   res <- list(widgetType="miniGUIscale",
               widget=function(FRAME,STORE,VAR)  {
-                miniGUIData[[STORE]][[VAR]] <<- tclVar()
+                ## miniGUIData[[STORE]][[VAR]] <<- tclVar()
+                setMiniGUIData(STORE,VAR,val=tclVar( ))
                 res <- tkscale(FRAME,label="",from=from,to=to,resolution=by,
                            orient="horizontal",
-                           variable=miniGUIData[[STORE]][[VAR]])
+                           ## variable=miniGUIData[[STORE]][[VAR]])
+                           variable=getMiniGUIData(STORE,VAR) )
                 return( res )
               },
               from=from,to=to,resolution=by)
@@ -359,7 +440,8 @@ miniGUImenusel <- function(xx)
 #     x[[1]] is taken as the default value. Logicals should be
 #     used as c("T","F").
 {
-  if( ! miniGUIData[["WIDGETLOCK"]] ) return(xx[[1]])
+  ## if( ! miniGUIData[["WIDGETLOCK"]] ) return(xx[[1]])
+  if( ! getMiniGUIData("WIDGETLOCK") ) return(xx[[1]])
   ## to avoid lazy
   xx
   ## normal stuff
@@ -367,13 +449,19 @@ miniGUImenusel <- function(xx)
               widget=function(FRAME,STORE,VAR)  {
                 ttk85 <- as.character(tcl("info", "tclversion")) >= "8.5"
                 if(ttk85) {
-                  miniGUIData[[STORE]][[VAR]] <<- tclVar(xx[[1]])
+                  ## miniGUIData[[STORE]][[VAR]] <<- tclVar(xx[[1]])
+                  setMiniGUIData(STORE,VAR,val=tclVar( xx[[1]] ))
                   res <- ttkcombobox(parent=FRAME,
-                            textvariable=miniGUIData[[STORE]][[VAR]],values=xx)
+                            ## textvariable=miniGUIData[[STORE]][[VAR]],
+                            textvariable=getMiniGUIData(STORE,VAR),
+                            values=xx)
                 }else{
                   x <- "Tcl vers. < 8.5, ttkcombobox not available."
-                  miniGUIData[[STORE]][[VAR]] <<- tclVar(xx)
-                  res <- tkentry(FRAME,textvariable=miniGUIData[[STORE]][[VAR]])
+                  ## miniGUIData[[STORE]][[VAR]] <<- tclVar(xx)
+                  setMiniGUIData(STORE,VAR,val=tclVar( xx ))
+                  res <- tkentry(FRAME,
+                            ## textvariable=miniGUIData[[STORE]][[VAR]])
+                            textvariable=getMiniGUIData(STORE,VAR))
                 }
                 return( res )
               },
@@ -389,11 +477,11 @@ miniGUImenusel <- function(xx)
 # ERRORES:
 
 
-## doNothingPlugin <- function(a)
-## ##
-## {
+doNothingPlugin <- function(a)
+##
+{
 ##   cat("\ndo nothing ",a)
-## }
+}
 
 
 evalPlugin <- function(ev)
@@ -403,6 +491,7 @@ evalPlugin <- function(ev)
 {
   return( ev )
 }
+environment(evalPlugin) <- .GlobalEnv
 
 
 
