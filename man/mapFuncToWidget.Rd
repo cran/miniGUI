@@ -37,8 +37,8 @@
   allowing a much more comfortable output.
   
   The string provided by \code{STORE} is used to store the function
-  arguments in the list \code{miniGUIData}, enabling in this way the
-  computation of the function.
+  arguments in the list \code{miniGUIEnvir$miniGUIData}, enabling 
+  in this way the computation of the function.
 }
 
 \value{
@@ -52,7 +52,6 @@
 
 \seealso{
   \code{\link{miniGUI}}, \code{\link{makeWidgetCmd}},
-  \code{\link{miniGUIgetFormals}}, \code{\link{addMenusCmd}},
   \code{\link{tcltk}}.
 }
 

@@ -1,12 +1,15 @@
 Package: miniGUI
-Title: tktcl quick and simple function GUI.
-Version: 0.8.0
-Date: 2010-07-01
-Depends: R (>= 2.5.0), tcltk
-Author: Jorge Luis Ojeda Cabrera
-Description: quick and simple tktcl miniGUI to call functions.
+Version: 0.8-1
+Date: 2018-05-21
+Title: Tcl/Tk Quick and Simple Function GUI
+Author: Jorge Luis Ojeda Cabrera <jojeda@unizar.es>
 Maintainer: Jorge Luis Ojeda Cabrera <jojeda@unizar.es>
-License: GPL
-Packaged: 2012-09-02 22:54:48 UTC; jorge
+Description: Quick and simple Tcl/Tk Graphical User Interface 
+  to call functions. Also comprises a very simple experimental 
+  GUI framework.
+Depends: R (>= 2.5.0), tcltk
+License: GPL (<= 2.0)
+NeedsCompilation: no
+Packaged: 2018-05-22 09:21:37 UTC; jorge
 Repository: CRAN
-Date/Publication: 2012-09-04 07:08:11
+Date/Publication: 2018-05-22 11:26:51 UTC

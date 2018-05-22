@@ -1,6 +1,9 @@
  \name{miniGUI}
 
 \alias{miniGUI}
+\alias{doNothingPlugin}
+\alias{evalPlugin}
+
 
 \title{ Simple R GUI}
 
@@ -10,8 +13,9 @@
 }
 
 \usage{
-  miniGUI(mainFrameFun,opFuns=NULL,title="mini GUI",init=function() {},
-  WRAPFUN=TRUE)
+  miniGUI(mainFrameFun=evalPlugin,opFuns=NULL,title="mini GUI",
+          init=function(frm) {},WRAPFUN=TRUE)
+  evalPlugin(ev)
 }
 
 \arguments{
@@ -22,13 +26,15 @@
   \item{init}{ Function to call before the GUI setup.}
   \item{WRAPFUN}{ when TRUE, the default option, an automatic 
     \code{\link{tcltk}} widget is built for the functions in \code{opFuns}.}
+  \item{ev}{ Expression to evaluate. }
+  
 }
 
 \details{
-  \code{miniGUI} pops up a window widget with a menu bar containing
-  two menus named \bold{Basics} and \bold{Ops} from which different 
-  functionality may be addressed during a \code{miniGUI} session. The 
-  menu \bold{Basics}  is used to request general purpose task during
+  \code{miniGUI} pops up a \code{\link{tcltk}} window widget with a menu 
+  bar containing two menus named \bold{Basics} and \bold{Ops} from which 
+  different functionality may be addressed during a \code{miniGUI} session. 
+  The menu \bold{Basics}  is used to request general purpose task during
   the session (like quitting), while \bold{Ops} is usually where
   more specific tasks, those the GUI is devoted to and that are given
   in \code{opFuns} are grouped. When a menu item from \bold{Ops} is
@@ -51,7 +57,7 @@
 \value{
   \code{miniGUI} function returns nothing. Nevertheless, the results of
   the execution of the different functions called during the \code{miniGUI}
-  session are available by means of the \code{miniGUIans} object, and
+  session are available by means of the \code{getMiniGUIans} function, and
   also by means of the \bold{GUI ans.} entry in the menu \bold{Basics}.
   
 }
@@ -63,7 +69,7 @@
 
 \seealso{
   \code{\link{miniGUI}}, \code{\link{makeWidgetCmd}},
-  \code{\link{addMenusCmd}}, \code{\link{tcltk}}.
+  \code{\link{tcltk}}.
 }
 
 \examples{

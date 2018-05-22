@@ -125,6 +125,15 @@ miniGUIoutput <- function(x,mess="\nminiGUI output: \n")
 }
 
 
+##  random string to make differen storages
+storageName <- function(n=5) {
+  res<-paste0(sample(c(LETTERS,letters),n),collapse="")
+  while( res%in%names(miniGUIEnvir$miniGUIData) ) 
+    res<-paste0(sample(c(LETTERS,letters),n),collapse="")
+  return( paste0("ffff",res) )
+}
+
+
 ##
 ##  Building the stuff
 ##
@@ -157,10 +166,8 @@ mapFuncToWidget <- function(f,frm,bttLabel="OK",STORE="ff",
 {
   ## get args
   ff <- miniGUIgetFormals(f)
-  ## miniGUIData[[STORE]] <<- as.list(ff)
   setMiniGUIData(STORE,val=as.list(ff))
   ## widget GUI input lock 
-  ## miniGUIData[["WIDGETLOCK"]] <<- TRUE
   setMiniGUIData("WIDGETLOCK",val=TRUE)
   ## tcltk stuff starts
   argsFrame <- tkframe(frm,borderwidth=2)
@@ -172,45 +179,49 @@ mapFuncToWidget <- function(f,frm,bttLabel="OK",STORE="ff",
     parEval <- eval(parse(text=par))  ##TODO I think we do not need this
     ## create input method widget
     if( is.miniGUIwidget(parEval) ){
-      ## miniGUIData[[STORE]][[i]] <<- tclVar( par )
       setMiniGUIData(STORE,i,val=tclVar( par ))
       imw <- parEval$widget(fm,STORE,i)  
     }else{ ## text entry is the default input method widget
-      ## miniGUIData[[STORE]][[i]] <<- tclVar( par )
       setMiniGUIData(STORE,i,val=tclVar( par ))
-      ## imw <- miniGUIdefaultEntry(fm, textvariable=miniGUIData[[STORE]][[i]])
       imw <- miniGUIdefaultEntry(fm, textvariable=getMiniGUIData(STORE,i))
     }
-    ## add the imput widget
-    tkgrid(tklabel(fm, text=i), tklabel(fm, text="="),imw)
+    ## get var label
+    varLabel<- if ("NAME" %in% names(parEval) ) parEval$NAME else i
+    ## set layout stuff and add the imput widget
+    ll<-tklabel(fm, text=paste(varLabel,":"),anchor="w")
+    tkgrid(ll,imw,padx=4,pady=2)
+    tkgrid.configure(ll,sticky="e")
+    tkgrid.configure(imw,sticky="ew")
+    tkgrid.columnconfigure(fm,1,weight=1)
+
   }
   ## release GUI widget input lock
-  ## miniGUIData[["WIDGETLOCK"]] <<- FALSE
   setMiniGUIData("WIDGETLOCK",val=FALSE)
   ## add execution button
   mainJob <- function (...)
   {
-    ## miniGUIans <<- miniGUIeval(f,lapply(miniGUIData[[STORE]],tclvalue))
     setMiniGUIans( miniGUIeval(f,lapply(getMiniGUIData(STORE),tclvalue)) ) 
-    if( "call" %in% names(getMiniGUIans()) ) 
-    {
-      ##miniGUIans$call <- callSubst 
+    if( "call" %in% names(getMiniGUIans()) ) {
       xxx <- getMiniGUIans()
       xxx$call <- callSubst
       assign("miniGUIans",xxx,envir=miniGUIEnvir)
     }
+    ## release the eval lock
+    setMiniGUIData(paste0(STORE,".EVALLOCK"),val=FALSE)
     ## show result
     miniGUIoutput( getMiniGUIans() )
   }
   ## add and pack the frames
   tkgrid(tkbutton(fm,text=bttLabel,command=mainJob))
   tkpack(fm,fill="x",expand=TRUE)
-  tkpack(argsFrame)
+  tkpack(argsFrame,fill="x",expand=TRUE)
   return(argsFrame)
 }
 
 
-makeWidgetCmd <- function(frmTitle,fun,baseFrame=.TkRoot,STORE="ff",GRAB=TRUE)
+makeWidgetCmd <- function(frmTitle,fun,baseFrame=.TkRoot,
+    STORE=storageName(),
+    GRAB=TRUE,SINGLE.EVAL=FALSE)
 ## ok
 # frmTitle = frame title.
 # fun = function to make menu command.
@@ -228,19 +239,33 @@ makeWidgetCmd <- function(frmTitle,fun,baseFrame=.TkRoot,STORE="ff",GRAB=TRUE)
     frm <- tktoplevel(baseFrame)
     if(GRAB)tkgrab(frm) ## enable input only in this frame...
     tkwm.title(frm,paste("mini GUI:",frmTitle))
+    ## create function evaluation lock if in 
+    if( SINGLE.EVAL ) setMiniGUIData(paste0(STORE,".EVALLOCK"),val=TRUE)
     mapFuncToWidget(fun, frm, "OK", STORE)
     quitCmd <- function()
     {
+      ## remove lock var
+      setMiniGUIData(paste0(STORE,".EVALLOCK"),val=NULL)
       ## Remove function storage from miniGUIData
-      ## miniGUIData[[STORE]] <<- NULL
       setMiniGUIData(STORE,val=NULL)
       ## When destroying, main frame is again enabled(ungrabbed !!)
       tkdestroy(frm)
     }
-    tkpack( tkbutton(frm,text=paste("Quit",frmTitle),command=quitCmd) )
+    if( SINGLE.EVAL ) {
+      while( getMiniGUIData(paste0(STORE,".EVALLOCK")) ) {
+        ## cat("-----Debug:\n");print( miniGUIEnvir$miniGUIData );Sys.sleep(2)
+      };
+      ## destroy function input widget and memory
+      quitCmd()
+    } else {
+      tkpack( tkbutton(frm,text=paste("Quit",frmTitle),command=quitCmd) )
+    }
+    return( getMiniGUIans() ) ## new feature  added by jojeda 29/03/2017
   }
   return(res)
 }
+
+
 
 
 addMenusCmd <- function(cmdFuns,baseFrame)
@@ -271,26 +296,23 @@ addMenusCmd <- function(cmdFuns,baseFrame)
 ##
 ##  mini GUI 
 ##
-# miniGUIffff <<- NA      ## storage.
-# miniGUIBase <<- NA      ## main tcltk frame storage.
 miniGUI <- function(mainFrameFun=evalPlugin,opFuns=NULL,title="mini GUI",
-                    init=function() {},WRAPFUN=TRUE)
+                    init=function(frm) {},WRAPFUN=TRUE)
 ## ok
 #  mainFrameFun = function to display(params are labels and entry fields) on
 #    the main window frame or NULL.
 #  opFuns= List of functions to add in the menu Ops
 #  title = main window frame title
-#  init = an init function to perform things after the setup. It may assume
-#     miniGUIBase existence.
+#  init = an init function to perform things after the setup. The parameter frm will be the tk top level reference.
 #  WRAPFUN = when FALSE, makeWidgetCmd is not used to create the miniGUI
 #     tcltk wrapper function. 
 #    Creates the gui 
 {
   ##  tcltk draw main window
-  miniGUIBase <- tktoplevel() ## miniGUIBase <<- tktoplevel()
+  miniGUIBase <-tktoplevel() 
   tkwm.title(miniGUIBase,title)
   ##  Some inits...
-  init()
+  init(miniGUIBase)
   printGUIAns <- function(...) { miniGUIoutput( getMiniGUIans() ) }
   quit <- function(...) { tkdestroy(miniGUIBase) }
   doNothing <- function(...){ }
@@ -340,31 +362,40 @@ miniGUI <- function(mainFrameFun=evalPlugin,opFuns=NULL,title="mini GUI",
   ##    add labels and fields for mainFrameFun on frame miniGUIBase
   if( is.function(mainFrameFun) )
     mapFuncToWidget(mainFrameFun,miniGUIBase,"Eval",STORE="mp")
-
   ##    return
   return(NA)
 }
 # miniGUIwidget.R
 #   some predefined miniGUI widgets, of course made using tcltk
 # NOTAS:
-#  - A miniGUIwidget is a function that should return a function
-#  of a frame and a variable name . The frame is the parent frame 
-#  of the widget, while the variable whose name is given should
-#  exists in the .GlobalEnv and it will be the variable that will
-#  reflect the widget value.
-#  - At the preset moment, only the $widget entry is used.
+#  - A miniGUIwidget is a list with a widget component that is function 
+#  that should return a function of a frame, storage and a variable name. 
+#  The frame is the parent frame of the widget, while the storage and 
+#  variable name will be the _place_ that will reflect the widget value.
+#      + __TODO__ Currently, a miniGUIwidget has an attribute named info, 
+#        with access function miniGUIwidgetInfo() which handles 
+#        additional information (like predefined label NAME)
+#  - Regarding layout in the case of commands (makeWidgetCmd()), things 
+#  are simple: there is a main frame(baseFrame=.TkRoot), and then (inside 
+#  mapFuncToWidget()) a frame (argsFrame) to handle function input which 
+#  consists in a row made using grid layout (tkgrid) for each function 
+#  parameter and tkgrid.rowconfigure() to determine the padding space. 
 #  - miniGUIData[["WIDGETLOCK"]] <<- T is used to implement a lock
 #  in mapFuncToWidget(), so all widget have to check 
 #  miniGUIData[["WIDGETLOCK"]], i. e.:
 #       if( miniGUIData[["WIDGETLOCK"]]==TRUE ) return(x)
-#  to see if is called from mapFuncToWidget()
+#  to see if is called from mapFuncToWidget() or from the console (`miniGUIData[["WIDGETLOCK"]]==FALSE`)
+# - setMiniGUIData("EVALLOCK",val=TRUE) (before `miniGUIData[["EVALLOCK"]] 
+# <-TRUE`) implements an evaluation lock, that will stand as long as the 
+# evaluation is not carried out, so when in mode SINGLE.EVAL (param 
+# `SINGLE.EVAL` in `makeWidgetCmd()` is set to `TRUE` there is no 
+# _quit_ button) 
 # ERRORES:
 
 
 ##
 ##  avoid building input widget when GUI is not used
 ##
-## miniGUIData[["WIDGETLOCK"]] <- FALSE
 setMiniGUIData("WIDGETLOCK",val=FALSE)
 
 ##
@@ -385,21 +416,19 @@ is.miniGUIwidget <- function(obj) "miniGUIwidget" %in% class(obj)
 ## basic GUI data entry 
 ##
 miniGUIdefaultEntry <- tkentry
-miniGUIentry <- function(x)
+miniGUIentry <- function(x,...)
 ##
-# x = init value
+# x = default value for the text entry
 {
-  ## if( ! miniGUIData[["WIDGETLOCK"]] ) return(x)
   if( ! getMiniGUIData("WIDGETLOCK") ) return(x)
   res <- list(widgetType="miniGUIentry",
               widget=function(FRAME,STORE,VAR)  {
-                ## miniGUIData[[STORE]][[VAR]] <<- tclVar( x )
                 setMiniGUIData(STORE,VAR,val=tclVar( x ))
-                ## res <- tkentry(FRAME,textvariable=miniGUIData[[STORE]][[VAR]])
                 res <- tkentry(FRAME,textvariable=getMiniGUIData(STORE,VAR))
                 return( res )
               },  
               x=x)
+  res<-c(res,list(...)) ## ... adds other options
   class(res) <- c(class(res),"miniGUIwidget")
   return( res )
 }
@@ -408,23 +437,21 @@ miniGUIentry <- function(x)
 ##
 ## scale GUI data entry
 ##
-miniGUIscale <- function(from,to,by)
+miniGUIscale <- function(from,to,by,...)
 ##
 # from, to, by = from which value, to which value, by which increment.
 {
-  ## if( ! miniGUIData[["WIDGETLOCK"]] ) return(from)
   if( ! getMiniGUIData("WIDGETLOCK") ) return(from)
   res <- list(widgetType="miniGUIscale",
               widget=function(FRAME,STORE,VAR)  {
-                ## miniGUIData[[STORE]][[VAR]] <<- tclVar()
                 setMiniGUIData(STORE,VAR,val=tclVar( ))
                 res <- tkscale(FRAME,label="",from=from,to=to,resolution=by,
                            orient="horizontal",
-                           ## variable=miniGUIData[[STORE]][[VAR]])
                            variable=getMiniGUIData(STORE,VAR) )
                 return( res )
               },
               from=from,to=to,resolution=by)
+  res<-c(res,list(...)) ## ... adds other options
   class(res) <- c(class(res),"miniGUIwidget")
   return( res )
 }
@@ -434,13 +461,12 @@ miniGUIscale <- function(from,to,by)
 ## menu selection GUI data entry
 ##
 ## will use ttkcombobox(tt,textvariable=a,values=v) when available
-miniGUImenusel <- function(xx)
+miniGUImenusel <- function(xx,...)
 ##
 # x = vector of mode numeric or character with available values.
 #     x[[1]] is taken as the default value. Logicals should be
 #     used as c("T","F").
 {
-  ## if( ! miniGUIData[["WIDGETLOCK"]] ) return(xx[[1]])
   if( ! getMiniGUIData("WIDGETLOCK") ) return(xx[[1]])
   ## to avoid lazy
   xx
@@ -449,23 +475,20 @@ miniGUImenusel <- function(xx)
               widget=function(FRAME,STORE,VAR)  {
                 ttk85 <- as.character(tcl("info", "tclversion")) >= "8.5"
                 if(ttk85) {
-                  ## miniGUIData[[STORE]][[VAR]] <<- tclVar(xx[[1]])
                   setMiniGUIData(STORE,VAR,val=tclVar( xx[[1]] ))
                   res <- ttkcombobox(parent=FRAME,
-                            ## textvariable=miniGUIData[[STORE]][[VAR]],
                             textvariable=getMiniGUIData(STORE,VAR),
                             values=xx)
                 }else{
                   x <- "Tcl vers. < 8.5, ttkcombobox not available."
-                  ## miniGUIData[[STORE]][[VAR]] <<- tclVar(xx)
                   setMiniGUIData(STORE,VAR,val=tclVar( xx ))
                   res <- tkentry(FRAME,
-                            ## textvariable=miniGUIData[[STORE]][[VAR]])
                             textvariable=getMiniGUIData(STORE,VAR))
                 }
                 return( res )
               },
               values=xx)
+  res<-c(res,list(...)) ## ... adds other options
   class(res) <- c(class(res),"miniGUIwidget")
   return( res )
 }

@@ -1,6 +1,36 @@
-# Default NAMESPACE created by R
-# Remove the previous line if you edit this file
+# miniGUI Specific NAMESPACE
 
+
+# Some imports  
+importFrom(tcltk, 
+           tkmenu, tkadd, tkpopup, tkwinfo, tkgrab,
+           tkpack, tkframe, tclVar, tklabel, tkgrid,
+           tkbutton, tkgrid.configure, tkgrid.columnconfigure,
+           tclvalue, tktoplevel, tkwm.title, tkdestroy,
+           tkconfigure, tkentry, tcl, ttkcombobox, tkscale,
+           .TkRoot
+)
+## __TODO__ shall we impor all tcltk !!??
+
+
+# no generics 
 
 # Export all names
-exportPattern(".")
+export( miniGUI, 
+        makeWidgetCmd, mapFuncToWidget, 
+        miniGUIdefaultEntry, miniGUIentry, miniGUImenusel, miniGUIscale, 
+        getMiniGUIans, 
+        evalPlugin, doNothingPlugin
+)
+
+
+## Not exported: getMiniGUIData, is.miniGUIwidget,
+##               miniGUIcallEval, miniGUIData, miniGUIEnvir, 
+##               miniGUIeval, miniGUIgetFormals, storageName,
+##               setMiniGUIans, setMiniGUIData, miniGUIoutput,
+##               addMenusCmd 
+
+
+
+
+

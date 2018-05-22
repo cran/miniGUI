@@ -5,8 +5,7 @@
 \alias{miniGUIentry}
 \alias{miniGUIscale}
 \alias{miniGUIdefaultEntry}
-\alias{is.miniGUIwidget}
-
+%\alias{is.miniGUIwidget}%
 
 
 \title{ Entry widgets}
@@ -16,16 +15,17 @@
 }
 
 \usage{
-  miniGUIentry(x)
-  miniGUIscale(from,to,by)
-  miniGUImenusel(xx)
+  miniGUIentry(x,...)
+  miniGUIscale(from,to,by,...)
+  miniGUImenusel(xx,...)
 }
 
 \arguments{
-  \item{x}{ A \R\ symbol, or numerical or character value. It can  also
+  \item{x}{ An \R\ symbol, or numerical or character value. It can  also
     be any \R\ expression.}
   \item{from,to,by}{ three numerical values.}
   \item{xx}{ Any vector of mode numeric or character.}
+  \item{...}{ Any other sort of present or future parameters.}
 }
 
 \details{
@@ -43,7 +43,10 @@
   the default value for that parameter if there exist such a value, or
   that contains nothing there is no such a default value.
 
-  \code{miniGUIdefaultEntry} is the default entry widget, at the moment
+  \code{...} stands for any other useful or future parameter. Currently you may 
+  use \code{NAME} to specify the parameter label in the input widgets
+
+  \code{miniGUIdefaultEntry} is the default input widget, at the moment
   a simple \code{\link{tkentry}}.
   
   \code{miniGUIentry(x)} makes the \code{\link{tkentry}} related to
@@ -85,7 +88,6 @@
 
 \seealso{
   \code{\link{miniGUI}}, \code{\link{makeWidgetCmd}},
-  \code{\link{miniGUIgetFormals}}, \code{\link{addMenusCmd}},
   \code{\link{tcltk}}.
 }
 

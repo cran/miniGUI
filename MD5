@@ -1,9 +1,8 @@
-400c19ac6188877fd74ae0cce036f09b *DESCRIPTION
-6a41502f6b964c6c046549b37ba4395f *NAMESPACE
-3907ac7a35506e568a931c3348e730d0 *R/miniGUI.R
-e7ee8f67aac4f997bd3e7904971511d9 *README
-2621305fddab4c65d5e53c403ce369df *man/makeWidgetCmd.Rd
-7d19cbe68f8cbbc16afe1294df1d4cad *man/mapFuncToWidget.Rd
-9db290ef883b65512bcd72a82a20963a *man/miniGUI.Rd
-1640cc391f38fa3de01782c226f44ae4 *man/miniGUIhelpers.Rd
-963c2094d681a7198d58b07bca17343f *man/miniGUIinputWidget.Rd
+2a7bc3ff6260976caaafd8da3b3d97a9 *DESCRIPTION
+a65829ed2d61acfe4b1e794a545a3865 *NAMESPACE
+e3649b3f7ae4cc9947e4ec03b1f6b112 *R/miniGUI.R
+7a0f24a2d524bfc47fd86cb469bbb3b5 *man/makeWidgetCmd.Rd
+9c1eb069ed462e8898608a2afb24a1c8 *man/mapFuncToWidget.Rd
+f7bad10d03ff6b01897d621701c94f1f *man/miniGUI.Rd
+d6d61eacbd8e60d7642681e2cce303f2 *man/miniGUIhelpers.Rd
+b02042c752a7156b3e1e22e5f1c32d32 *man/miniGUIinputWidget.Rd

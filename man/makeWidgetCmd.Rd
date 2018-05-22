@@ -10,7 +10,8 @@
 }
 
 \usage{
-  makeWidgetCmd(frmTitle,fun,baseFrame=.TkRoot,STORE="ff",GRAB=TRUE)
+  makeWidgetCmd(frmTitle,fun,baseFrame=.TkRoot,STORE=storageName(),
+                GRAB=TRUE,SINGLE.EVAL=FALSE)
 }
 
 \arguments{
@@ -21,6 +22,8 @@
   \item{STORE}{ A string. Name of the place where to store details needed
     by the GUI to perform the execution.}
   \item{GRAB}{ Logical. When \code{TRUE} disable input in any other window.}
+  \item{SINGLE.EVAL}{ Logical. When set to \code{TRUE} it avoids return any 
+      value till computation is really finished.}
 }
 
 \details{
@@ -39,8 +42,7 @@
 }
 
 \seealso{
-  \code{\link{miniGUI}}, \code{\link{makeWidgetCmd}},
-  \code{\link{miniGUIgetFormals}}, \code{\link{addMenusCmd}},
+  \code{\link{miniGUI}}, \code{\link{mapFuncToWidget}},
   \code{\link{tcltk}}.
 }
 
